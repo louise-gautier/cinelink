@@ -119,18 +119,40 @@ button:not(:disabled):hover {
 }
 
 .chain-item {
-  display: inline-block;
-  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
   border-radius: 20px;
-  margin: 2px;
+  margin: 4px 2px;
   font-weight: 600;
   font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+.chain-item img,
+.chain-thumb-placeholder {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #2a2a34;
+  flex-shrink: 0;
+}
+
+.chain-label {
+  white-space: nowrap;
 }
 
 .chain-movie {
   background: rgba(230, 179, 37, 0.15);
   color: var(--movie);
   border: 1px solid rgba(230, 179, 37, 0.4);
+}
+
+.chain-movie img,
+.chain-movie .chain-thumb-placeholder {
+  border-radius: 6px;
 }
 
 .chain-actor {
@@ -142,6 +164,11 @@ button:not(:disabled):hover {
 .chain-sep {
   color: var(--text-dim);
   margin: 0 2px;
+}
+
+.best-path-chain {
+  margin-top: 10px;
+  line-height: 2.4;
 }
 
 #picker {
