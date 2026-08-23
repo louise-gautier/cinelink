@@ -1,4 +1,4 @@
-# 🎬 CinéLien
+# 🎬 CinéLink
 
 Un jeu qui consiste à relier deux films à travers une chaîne d'acteurs
 (façon "six degrees of Kevin Bacon"), avec un mode "trouve le chemin le
