@@ -258,8 +258,9 @@ async def shortest_path(start: int, end: int):
         return {"found": True, "path": [], "hops": 0}
 
     call_count = {"n": 0}
-    movie_titles: Dict[int, Optional[str]] = {}
-    actor_names: Dict[int, Optional[str]] = {}
+    # id -> {"title"/"name": str, "poster"/"photo": Optional[str]}
+    movie_titles: Dict[int, dict] = {}
+    actor_names: Dict[int, dict] = {}
 
     async with httpx.AsyncClient() as client:
         movie_cast_cache: Dict[int, List[int]] = {}
@@ -272,7 +273,10 @@ async def shortest_path(start: int, end: int):
             data = await tmdb_get(client, f"/movie/{movie_id}/credits", {})
             cast = sorted(data.get("cast", []), key=lambda c: c.get("order", 999))[:TOP_CAST]
             for c in cast:
-                actor_names.setdefault(c["id"], c.get("name"))
+                actor_names.setdefault(
+                    c["id"],
+                    {"name": c.get("name"), "photo": poster_url(c.get("profile_path"))},
+                )
             result = [c["id"] for c in cast]
             movie_cast_cache[movie_id] = result
             return result
@@ -286,7 +290,13 @@ async def shortest_path(start: int, end: int):
                 data.get("cast", []), key=lambda m: m.get("popularity", 0), reverse=True
             )[:TOP_MOVIES_PER_ACTOR]
             for f in films:
-                movie_titles.setdefault(f["id"], f.get("title") or f.get("original_title"))
+                movie_titles.setdefault(
+                    f["id"],
+                    {
+                        "title": f.get("title") or f.get("original_title"),
+                        "poster": poster_url(f.get("poster_path")),
+                    },
+                )
             result = [f["id"] for f in films]
             actor_movies_cache[actor_id] = result
             return result
@@ -360,11 +370,17 @@ async def shortest_path(start: int, end: int):
 
         async def fetch_movie_title(mid):
             data = await tmdb_get(client, f"/movie/{mid}", {})
-            movie_titles[mid] = data.get("title")
+            movie_titles[mid] = {
+                "title": data.get("title"),
+                "poster": poster_url(data.get("poster_path")),
+            }
 
         async def fetch_actor_name(aid):
             data = await tmdb_get(client, f"/person/{aid}", {})
-            actor_names[aid] = data.get("name")
+            actor_names[aid] = {
+                "name": data.get("name"),
+                "photo": poster_url(data.get("profile_path")),
+            }
 
         await asyncio.gather(
             *[fetch_movie_title(m) for m in need_movie_ids],
@@ -376,9 +392,25 @@ async def shortest_path(start: int, end: int):
             kind, raw_id = k.split(":", 1)
             _id = int(raw_id)
             if kind == "movie":
-                path.append({"type": "movie", "id": _id, "label": movie_titles.get(_id, f"Film {_id}")})
+                info = movie_titles.get(_id) or {}
+                path.append(
+                    {
+                        "type": "movie",
+                        "id": _id,
+                        "label": info.get("title") or f"Film {_id}",
+                        "image": info.get("poster"),
+                    }
+                )
             else:
-                path.append({"type": "actor", "id": _id, "label": actor_names.get(_id, f"Acteur {_id}")})
+                info = actor_names.get(_id) or {}
+                path.append(
+                    {
+                        "type": "actor",
+                        "id": _id,
+                        "label": info.get("name") or f"Acteur {_id}",
+                        "image": info.get("photo"),
+                    }
+                )
 
         hops = sum(1 for p in path if p["type"] == "actor")
         return {"found": True, "path": path, "hops": hops, "calls": call_count["n"]}
