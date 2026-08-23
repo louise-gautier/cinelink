@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CinéLien — Relie deux films</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>🎬 CinéLien</h1>
+    <p class="subtitle">Relie deux films en passant d'acteur en acteur, film après film.</p>
+  </header>
+
+  <section id="targets">
+    <div class="movie-card" id="movie-start">
+      <div class="placeholder">Film de départ</div>
+    </div>
+    <div class="arrow">➜</div>
+    <div class="movie-card" id="movie-end">
+      <div class="placeholder">Film d'arrivée</div>
+    </div>
+  </section>
+
+  <section id="controls">
+    <button id="btn-new-game">Nouvelle partie</button>
+    <button id="btn-undo" disabled>↩ Annuler le dernier coup</button>
+    <span id="hop-counter">0 étape(s)</span>
+  </section>
+
+  <section id="chain"></section>
+
+  <section id="picker">
+    <h2 id="picker-title">Clique sur « Nouvelle partie » pour commencer</h2>
+    <div id="picker-grid" class="grid"></div>
+  </section>
+
+  <section id="result" class="hidden">
+    <h2 id="result-title"></h2>
+    <button id="btn-best-path">Voir le meilleur chemin possible</button>
+    <div id="best-path"></div>
+  </section>
+
+  <footer>
+    <p>Données fournies par <a href="https://www.themoviedb.org/" target="_blank" rel="noopener">TMDB</a>. Ce produit utilise l'API TMDB mais n'est ni approuvé ni certifié par TMDB.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
