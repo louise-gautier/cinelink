@@ -30,13 +30,20 @@ function renderMovieCard(container, movie) {
     : `<div class="placeholder">?</div>`;
 }
 
+function renderChainItem(step, cls) {
+  const img = step.image
+    ? `<img src="${step.image}" alt="" onerror="this.style.display='none'"/>`
+    : `<span class="chain-thumb-placeholder"></span>`;
+  return `<span class="chain-item ${cls}">${img}<span class="chain-label">${escapeHtml(step.label)}</span></span>`;
+}
+
 function renderChain() {
   const chainEl = el("chain");
   chainEl.innerHTML = state.chain
     .map((step, i) => {
       const cls = step.type === "movie" ? "chain-movie" : "chain-actor";
       const sep = i < state.chain.length - 1 ? '<span class="chain-sep">→</span>' : "";
-      return `<span class="chain-item ${cls}">${escapeHtml(step.label)}</span>${sep}`;
+      return `${renderChainItem(step, cls)}${sep}`;
     })
     .join("");
   const hops = state.chain.filter((s) => s.type === "actor").length;
@@ -59,7 +66,9 @@ async function startNewGame() {
     const data = await api("/new_game");
     state.movieA = data.movie_a;
     state.movieB = data.movie_b;
-    state.chain = [{ type: "movie", id: data.movie_a.id, label: data.movie_a.title }];
+    state.chain = [
+      { type: "movie", id: data.movie_a.id, label: data.movie_a.title, image: data.movie_a.poster },
+    ];
     renderMovieCard(el("movie-start"), data.movie_a);
     renderMovieCard(el("movie-end"), data.movie_b);
     renderChain();
@@ -80,7 +89,7 @@ async function loadCastStep() {
   grid.innerHTML = data.cast
     .map(
       (c) => `
-      <button class="pick-card" data-id="${c.id}" data-label="${escapeHtml(c.name)}">
+      <button class="pick-card" data-id="${c.id}" data-label="${escapeHtml(c.name)}" data-image="${c.photo || ""}">
         <img src="${c.photo || ""}" onerror="this.style.display='none'"/>
         <div>${escapeHtml(c.name)}</div>
         <div class="sub">${escapeHtml(c.character || "")}</div>
@@ -88,7 +97,9 @@ async function loadCastStep() {
     )
     .join("");
   grid.querySelectorAll(".pick-card").forEach((btn) =>
-    btn.addEventListener("click", () => onPickActor(Number(btn.dataset.id), btn.dataset.label))
+    btn.addEventListener("click", () =>
+      onPickActor(Number(btn.dataset.id), btn.dataset.label, btn.dataset.image || null)
+    )
   );
 }
 
@@ -101,7 +112,7 @@ async function loadMoviesStep() {
   grid.innerHTML = data.movies
     .map(
       (m) => `
-      <button class="pick-card" data-id="${m.id}" data-label="${escapeHtml(m.title)}">
+      <button class="pick-card" data-id="${m.id}" data-label="${escapeHtml(m.title)}" data-image="${m.poster || ""}">
         <img src="${m.poster || ""}" onerror="this.style.display='none'"/>
         <div>${escapeHtml(m.title)}</div>
         <div class="sub">${m.year || ""}</div>
@@ -109,18 +120,20 @@ async function loadMoviesStep() {
     )
     .join("");
   grid.querySelectorAll(".pick-card").forEach((btn) =>
-    btn.addEventListener("click", () => onPickMovie(Number(btn.dataset.id), btn.dataset.label))
+    btn.addEventListener("click", () =>
+      onPickMovie(Number(btn.dataset.id), btn.dataset.label, btn.dataset.image || null)
+    )
   );
 }
 
-function onPickActor(id, label) {
-  state.chain.push({ type: "actor", id, label });
+function onPickActor(id, label, image) {
+  state.chain.push({ type: "actor", id, label, image });
   renderChain();
   loadCastStep0();
 }
 
-function onPickMovie(id, label) {
-  state.chain.push({ type: "movie", id, label });
+function onPickMovie(id, label, image) {
+  state.chain.push({ type: "movie", id, label, image });
   renderChain();
   if (id === state.movieB.id) {
     onWin();
@@ -184,9 +197,10 @@ async function showBestPath() {
         : data.hops === yourHops
         ? "Bravo, ton chemin est déjà optimal (ou aussi court) !"
         : `Ton chemin (${yourHops} étapes) était même meilleur que celui trouvé automatiquement (${data.hops}) !`;
-    el("best-path").innerHTML =
-      `<strong>${comparison}</strong><br/>` +
-      data.path.map((p) => escapeHtml(p.label)).join(" → ");
+    const pathHtml = data.path
+      .map((p) => renderChainItem(p, p.type === "movie" ? "chain-movie" : "chain-actor"))
+      .join('<span class="chain-sep">→</span>');
+    el("best-path").innerHTML = `<strong>${comparison}</strong><div class="best-path-chain">${pathHtml}</div>`;
   } catch (e) {
     el("best-path").textContent = "Erreur lors du calcul : " + e.message;
   } finally {
